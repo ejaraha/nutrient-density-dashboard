@@ -1,5 +1,7 @@
-library(dplyr)
+library(tidyverse)
 setwd("C:/Users/Owner/repos/nutrition_dashboard/data/raw")
+
+# import data
 
 #body
 food <- read.csv("food.csv", stringsAsFactors = FALSE)
@@ -27,9 +29,9 @@ glimpse(branded_food)
 glimpse(foundation_food)
 glimpse(food)
 
+# preliminary joins to be cleaned for making tables
 
-#nrf calculation
-food_nutrient %>% 
+nrf_calculation <- food_nutrient %>% 
   left_join(nutrient, by=c("nutrient_id"="id")) %>% 
   left_join(food_nutrient_conversion_factor, by=c("fdc_id")) %>%
   left_join(food_calorie_conversion_factor, by=c("id.y"="food_nutrient_conversion_factor_id")) %>%
@@ -37,41 +39,34 @@ food_nutrient %>%
          fdc_id,
          name,
          amount,
+         unit_name,
          protein_value,
          fat_value,
-         carbohydrate_value) %>%
-  glimpse()
+         carbohydrate_value) 
 
-#nrf food descriptions
-food %>% 
+nrf_food_descriptions <- food %>% 
   left_join(branded_food, by="fdc_id") %>%
   left_join(food_category, by=c("food_category_id"="id")) %>%
   select(fdc_id,
          data_type,
          description.y,
          brand_owner,
-         branded_food_category) %>%
-  glimpse()
+         branded_food_category)
 
-#data_points
-food_nutrient %>%
+data_points <- food_nutrient %>%
   left_join(nutrient, by=c("nutrient_id"="id")) %>%
   select(fdc_id, 
          nutrient_id,
          name,
          data_points) %>%
-  filter(is.na(data_points) != TRUE) %>%
-  #arrange(desc(data_points)) %>%
-  glimpse()
+  filter(is.na(data_points) != TRUE)
 
-#market_acquisition
-market_acquisition %>%
+market_acquisition <- market_acquisition %>%
   select(fdc_id,
          brand_description,
          store_city,
          store_name,
-         store_state) %>%
-  glimpse()
+         store_state)
 
 
   
