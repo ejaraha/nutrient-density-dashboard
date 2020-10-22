@@ -9,7 +9,7 @@ source("C:/Users/Owner/repos/nutrition_dashboard/analysis/import.r")
 nrf_calculation <- food_nutrient %>% 
   left_join(all_of(nutrient), by=c("nutrient_id"="id")) %>%
   rename(nutrient_name = name,
-         amount_per_100g = amount,
+         nutrient_per_100g = amount,
          nutrient_unit = unit_name) %>%
   filter(nutrient_name %in% c("Calcium, Ca",
                               "Iron, Fe",
@@ -20,11 +20,12 @@ nrf_calculation <- food_nutrient %>%
                               "Vitamin D (D2 + D3)",
                               "Sodium, Na",
                               "Sugars, added",
-                              "Fatty acids, total saturated")) %>%
+                              "Fatty acids, total saturated",
+                              "Energy")) %>%
   select(id,
          fdc_id,
          nutrient_name,
-         amount_per_100g,
+         nutrient_per_100g,
          nutrient_unit)
 
 nrf_food_descriptions <- food %>% 
@@ -70,14 +71,14 @@ market_acquisition <- market_acquisition %>%
 
 hei <- hei %>%
   mutate(unit = na_if(unit, ""))
-
-food_equivalent <- food_equivalent %>%
-  rename("foodcode" = ï..FOODCODE,
-         "description" = DESCRIPTION) %>%
-  pivot_longer(cols = !c("foodcode", "description"),
-               names_to = c("food_goup", "food_subgroup"),
-               names_sep = "_",
-               values_to = "equivalents_in_100g") 
+# 
+# food_equivalent <- food_equivalent %>%
+#   rename("foodcode" = ï..FOODCODE,
+#          "description" = DESCRIPTION) %>%
+#   pivot_longer(cols = !c("foodcode", "description"),
+#                names_to = c("food_goup", "food_subgroup"),
+#                names_sep = "_",
+#                values_to = "equivalents_in_100g")
 
 
 ## check for nulls and empty spaces
