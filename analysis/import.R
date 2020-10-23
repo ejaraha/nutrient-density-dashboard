@@ -16,6 +16,7 @@ food_nutrient_source <- read.csv("fdc/food_nutrient_source.csv", stringsAsFactor
 
 #supplemental data
 daily_value <- read.csv("daily_values.csv", stringsAsFactors = FALSE)
+food_group_dga <- read.csv("food_group_dga.csv", stringsAsFactors = FALSE)
 hei <- read.csv("hei_2000_2010_2015.csv", stringsAsFactors = FALSE)
 food_equivalent <- read.csv("food_patterns_equivalents_db_per_100g_of_fndds_2015_2016_foods.csv", stringsAsFactors = FALSE)
 

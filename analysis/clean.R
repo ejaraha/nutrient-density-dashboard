@@ -5,9 +5,14 @@ source("C:/Users/Owner/repos/nutrition_dashboard/analysis/import.r")
 # 2} nrf_food_descriptions
 # 3} data_points
 # 4} market_acquisition
+# 5} hei
+# 6} food_equivalent
+# 7} daily_value (no cleaning necessary)
+# 8} food_group_dga (no cleaning necessary)
 
 nrf_calculation <- food_nutrient %>% 
   left_join(all_of(nutrient), by=c("nutrient_id"="id")) %>%
+  mutate(unit_name = tolower(unit_name)) %>%
   rename(nutrient_name = name,
          nutrient_per_100g = amount,
          nutrient_unit = unit_name) %>%
@@ -16,10 +21,10 @@ nrf_calculation <- food_nutrient %>%
                               "Potassium, K",
                               "Protein",
                               "Fiber, total dietary",
+                              #use vitamin d *IU* because 6,226 foods have observations for vitamin d IU vs 5 foods for vit d mg
                               "Vitamin D (D2 + D3), International Units",
-                              "Vitamin D (D2 + D3)",
                               "Sodium, Na",
-                              "Sugars, added",
+                              "Sugars, Total NLEA",
                               "Fatty acids, total saturated",
                               "Energy")) %>%
   select(id,
@@ -34,7 +39,7 @@ nrf_food_descriptions <- food %>%
   mutate(description.y = replace_na(description.y, "")) %>%
   unite("food_category", description.y, branded_food_category, sep="") %>%
   mutate_at(c("food_category", 
-              "description.x"), ~na_if(., "")) %>%
+              "description.x"), ~na_if(tolower(.), "")) %>%
   rename("description" = description.x) %>%
   select(fdc_id,
          data_type,
@@ -89,5 +94,7 @@ hei <- hei %>%
 # check_empty_glimpse(market_acquisition)
 # check_empty_glimpse(hei)
 # check_empty_glimpse(daily_value)
+# check_empty_glimpse(food_group_dga)
+# check_empty_glimpse(food_equivalent)
 
 
