@@ -10,72 +10,86 @@ source("C:/Users/Owner/repos/nutrition_dashboard/analysis/import.r")
 # 7} daily_value (no cleaning necessary)
 # 8} food_group_dga (no cleaning necessary)
 
-nrf_calculation <- food_nutrient %>% 
+energy <- food_nutrient %>% 
+  left_join(nutrient, by=c("nutrient_id"="id")) %>%
+  filter(name == "Energy" & unit_name == "KCAL") %>%
+  rename("energy_per_100g" = amount,
+         "energy_unit" = unit_name) %>%
+  mutate(energy_unit = tolower(energy_unit)) %>%
+  select(fdc_id,
+         energy_per_100g,
+         energy_unit) 
+
+nrf_variables <- food %>%
+  filter(data_type == "survey_fndds_food") %>%
+  # nutrient amounts
+  left_join(all_of(food_nutrient), by="fdc_id") %>% 
+  # nutrient names and units
   left_join(all_of(nutrient), by=c("nutrient_id"="id")) %>%
-  mutate(unit_name = tolower(unit_name)) %>%
+  # food category crossover
+  left_join(all_of(fndds_survey), by="fdc_id") %>%
+  # food categories
+  left_join(all_of(wweia_food_category), by=c("wweia_category_code"="wweia_food_category_code")) %>%
+  # food group crossover
+  left_join(all_of(food_group_nrf_wweia), by="wweia_category_code") %>%  
+  # food groups and dga daily reccommendations
+  left_join(all_of(food_group_nrf_dga), by="fg_id") %>%
+  # energy content per food (kcal)
+  left_join(all_of(energy), by="fdc_id") %>%
   rename(nutrient_name = name,
          nutrient_per_100g = amount,
-         nutrient_unit = unit_name) %>%
-  filter(nutrient_name %in% c("Calcium, Ca",
-                              "Iron, Fe",
-                              "Potassium, K",
-                              "Protein",
-                              "Fiber, total dietary",
-                              #use vitamin d *IU* because 6,226 foods have observations for vitamin d IU vs 5 foods for vit d mg
-                              "Vitamin D (D2 + D3), International Units",
-                              "Sodium, Na",
-                              "Sugars, Total NLEA",
-                              "Fatty acids, total saturated",
-                              "Energy")) %>%
+         nutrient_unit = unit_name,
+         food_category = wweia_food_category_description) %>%
+        # clean up nutrient names
+  mutate(nutrient_unit = tolower(nutrient_unit),
+         description = tolower(description),
+         nutrient_name = case_when(nutrient_name == "Calcium, Ca" ~"calcium",
+                                   nutrient_name == "Fatty acids, total saturated" ~"saturated fat",
+                                   nutrient_name == "Fiber, total dietary" ~"dietary fiber",
+                                   nutrient_name == "Iron, Fe" ~"iron",
+                                   nutrient_name == "Potassium, K" ~"potassium",
+                                   nutrient_name == "Protein" ~"protein",
+                                   nutrient_name == "Sodium, Na" ~"sodium",
+                                   nutrient_name == "Sugars, Total NLEA" ~"total sugars",
+                                   nutrient_name == "Vitamin D (D2 + D3), International Units" ~"vitamin d",
+                                   TRUE ~nutrient_name),
+         # assign id for nrf nutrients to aid in joining daily values
+         nutrient_id = case_when(nutrient_name == "protein" ~1,
+                                 nutrient_name == "dietary fiber" ~2,
+                                 nutrient_name == "vitamin d" ~3,
+                                 nutrient_name == "potassium" ~4,
+                                 nutrient_name == "calcium" ~5,
+                                 nutrient_name == "iron" ~6,
+                                 nutrient_name == "sodium" ~7,
+                                 nutrient_name == "total sugars" ~8,
+                                 nutrient_name == "saturated fat" ~9,
+                                 TRUE ~9999),
+         # convert units
+         nutrient_per_100g = case_when(nutrient_unit == "iu" ~nutrient_per_100g*0.025,
+                                       TRUE ~as.double(nutrient_per_100g)),
+         nutrient_unit = case_when(nutrient_unit == "iu" ~"mcg",
+                                   TRUE ~nutrient_unit)) %>% 
+  # daily values
+  left_join(daily_value[-2], by=c("nutrient_id"="dv_id")) %>% # daily_value[-2] to eliminate clash with nrf_variables.nutrient_name when joining
+  # filter only necessary nutrients
+  filter(nutrient_id %in% c(1:9)) %>%
   select(id,
          fdc_id,
+         description,
          nutrient_name,
          nutrient_per_100g,
-         nutrient_unit)
+         nutrient_unit,
+         daily_value,
+         daily_value_unit,
+         nutrient_type,
+         energy_per_100g,
+         energy_unit,
+         food_category,
+         food_group,
+         daily_rec_dga,
+         equivalent_unit)
 
-nrf_food_descriptions <- food %>% 
-  left_join(branded_food, by="fdc_id") %>%
-  left_join(food_category, by=c("food_category_id"="id")) %>% 
-  mutate(description.y = replace_na(description.y, "")) %>%
-  unite("food_category", description.y, branded_food_category, sep="") %>%
-  mutate_at(c("food_category", 
-              "description.x"), ~na_if(tolower(.), "")) %>%
-  rename("description" = description.x) %>%
-  select(fdc_id,
-         data_type,
-         description,
-         food_category)
 
-data_points <- food_nutrient %>%
-  left_join(nutrient, by=c("nutrient_id"="id")) %>%
-  left_join(food_nutrient_derivation, by = c("derivation_id"="id")) %>%
-  left_join(food_nutrient_source, by=c("source_id"="id")) %>%
-  select(fdc_id, 
-         nutrient_id,
-         name,
-         data_points,
-         description.x,
-         description.y) %>%
-  rename(nutrient_name = name,
-         nutrient_source = description.y,
-         nutrient_derivation = description.x) %>%
-  filter(is.na(data_points) != TRUE)
-
-market_acquisition <- market_acquisition %>%
-  # replace "" with NA, rename variables
-  mutate_at(c("brand_description", 
-              "store_city", 
-              "store_name", 
-              "store_state"), ~na_if(.,"")) %>%
-  rename(brand = brand_description) %>%
-  select(fdc_id,
-         brand,
-         store_city,
-         store_name,
-         store_state)
-
-hei <- hei %>%
-  mutate(unit = na_if(unit, ""))
 # 
 # food_equivalent <- food_equivalent %>%
 #   rename("foodcode" = ï..FOODCODE,

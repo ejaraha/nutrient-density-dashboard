@@ -9,4 +9,3 @@ check_empty_glimpse <- function(df){
   glimpse(df)
   check_empty(df)
 }
-
