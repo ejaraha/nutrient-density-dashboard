@@ -9,7 +9,7 @@ food <- food %>%
 
 fndds_survey <- fndds_survey %>% 
   select(fdc_id,
-         wweia_category_code)
+         food_code)
 
 food_nutrient <- food_nutrient %>%
   select(id,
@@ -22,17 +22,26 @@ nutrient <- nutrient %>%
          name,
          unit_name)
 
-## check for nulls and empty spaces
-print("checking for nulls and empty spaces")
+food_equivalent <- food_equivalent %>%
+  select(FOODCODE,
+         DESCRIPTION,
+         F_TOTAL,
+         V_TOTAL,
+         G_WHOLE,
+         G_TOTAL,
+         PF_TOTAL,
+         PF_NUTSDS,
+         D_TOTAL)
 
-check_empty_glimpse(food)
-check_empty_glimpse(fndds_survey)
-check_empty_glimpse(food_nutrient)
-check_empty_glimpse(nutrient)
-check_empty_glimpse(wweia_food_category)
-check_empty_glimpse(food_group_nrf_dga)
-check_empty_glimpse(food_group_nrf_wweia)
-check_empty_glimpse(food_equivalent)
+## check for nulls and empty spaces
+# print("checking for nulls and empty spaces")
+
+# check_empty_glimpse(food)
+# check_empty_glimpse(fndds_survey)
+# check_empty_glimpse(food_nutrient)
+# check_empty_glimpse(nutrient)
+# check_empty_glimpse(food_group_nrf_dga)
+# check_empty_glimpse(food_equivalent)
 
 ## handle  nulls
 print("handling nulls...")
@@ -40,16 +49,7 @@ print("handling nulls...")
 food <- food %>%
   mutate(description = na_if(description,""))
 
-check_empty_glimpse(food)
-
-# 
-# food_equivalent <- food_equivalent %>%
-#   rename("foodcode" = ï..FOODCODE,
-#          "description" = DESCRIPTION) %>%
-#   pivot_longer(cols = !c("foodcode", "description"),
-#                names_to = c("food_goup", "food_subgroup"),
-#                names_sep = "_",
-#                values_to = "equivalents_in_100g")
+# check_empty_glimpse(food)
 
 
 

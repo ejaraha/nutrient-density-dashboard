@@ -1,4 +1,4 @@
-#source("C:/Users/Owner/repos/nutrition_dashboard/analysis/clean.r")
+source("C:/Users/Owner/repos/nutrition_dashboard/analysis/clean.r")
 
 energy <- food_nutrient %>% 
   left_join(all_of(nutrient), by=c("nutrient_id"="id")) %>%
@@ -10,6 +10,33 @@ energy <- food_nutrient %>%
          energy_per_100g,
          energy_unit) 
 
+food_equivalent <- food_equivalent %>%
+  rename("foodcode" = FOODCODE,
+         "description" = DESCRIPTION,
+         "fruits" = F_TOTAL,
+         "vegetables" = V_TOTAL,
+         "whole_grains" = G_WHOLE,
+         "grains" = G_TOTAL,
+         "protein_foods" = PF_TOTAL,
+         "nuts_and_seeds" = PF_NUTSDS,
+         "dairy" = D_TOTAL) %>%
+  pivot_longer(cols = !c("foodcode", "description"),
+               names_to = "food_group",
+               values_to = "equivalents_per_100g") %>%
+  mutate("nrf_fg_id" = case_when(food_group == "whole_grains" ~1,
+                           food_group == "vegetables" ~2,
+                           food_group =="fruits" ~3,
+                           food_group == "dairy" ~4,
+                           food_group == "nuts_and_seeds" ~5),
+         "equivalent_unit" = case_when(food_group == "whole_grains" ~"oz",
+                                       food_group == "vegetables" ~"cup",
+                                       food_group =="fruits" ~"cup",
+                                       food_group == "dairy" ~"cup",
+                                       food_group == "nuts_and_seeds" ~"oz",
+                                       food_group == "protein_foods" ~"oz",
+                                       food_group == "grains" ~"oz"),
+         food_group = str_replace_all(food_group, "_", " ")) 
+
 nrf_variables <- food %>%
   # fndds foods only
   filter(data_type == "survey_fndds_food") %>%
@@ -17,23 +44,20 @@ nrf_variables <- food %>%
   left_join(all_of(food_nutrient), by="fdc_id") %>% 
   # nutrient names and units
   left_join(all_of(nutrient), by=c("nutrient_id"="id")) %>%
-  # food category crossover
-  left_join(all_of(fndds_survey), by="fdc_id") %>%
-  # food categories
-  left_join(all_of(wweia_food_category), by=c("wweia_category_code"="wweia_food_category_code")) %>%
   # food group crossover
-  left_join(all_of(food_group_nrf_wweia), by="wweia_category_code") %>%  
+  left_join(all_of(fndds_survey), by="fdc_id") %>%
+  # food groups fped
+  left_join(all_of(food_equivalent), by=c("food_code"="foodcode")) %>%
   # food groups and dga daily recommendations
-  left_join(all_of(food_group_nrf_dga), by="fg_id") %>%
+  left_join(all_of(food_group_nrf_dga), by="nrf_fg_id") %>%
   # energy content per food (kcal)
   left_join(all_of(energy), by="fdc_id") %>%
   # clean names
   rename(nutrient_name = name,
          nutrient_per_100g = amount,
-         nutrient_unit = unit_name,
-         food_category = wweia_food_category_description) %>%
+         nutrient_unit = unit_name) %>% 
   mutate(nutrient_unit = tolower(nutrient_unit),
-         description = tolower(description),
+         "description" = tolower(description.x),
          nutrient_name = case_when(nutrient_name == "Calcium, Ca" ~"calcium",
                                    nutrient_name == "Fatty acids, total saturated" ~"saturated fat",
                                    nutrient_name == "Fiber, total dietary" ~"dietary fiber",
@@ -64,8 +88,10 @@ nrf_variables <- food %>%
   left_join(daily_value[-2], by=c("nutrient_id"="dv_id")) %>% # daily_value[-2] to eliminate clash with nrf_variables.nutrient_name when joining
   # filter only necessary nutrients
   filter(nutrient_id %in% c(1:9)) %>%
+  rename("food_group"=food_group.x) %>% 
   select(id,
          fdc_id,
+         food_code,
          description,
          nutrient_name,
          nutrient_per_100g,
@@ -75,10 +101,11 @@ nrf_variables <- food %>%
          nutrient_type,
          energy_per_100g,
          energy_unit,
-         food_category,
          food_group,
+         equivalents_per_100g,
+         equivalent_unit,
          daily_rec_dga,
-         equivalent_unit)
+         equivalent_unit_dga)
 
 
 nrf <- nrf_variables %>%
@@ -91,6 +118,12 @@ nrf <- nrf_variables %>%
   group_by(fdc_id) %>%
   summarize(description = max(description),
             "nrf" = round(sum(n))) 
+
+
+
+
+
+
 # 
 # df <- nrf %>% filter(grepl("2%", description) == TRUE
 #                     & grepl("2%", description) == TRUE)
