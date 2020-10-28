@@ -12,7 +12,7 @@ food_equivalent <- read.csv("food_pattern_equivalents_database.csv", stringsAsFa
 
 #supplemental data
 daily_value <- read.csv("daily_values.csv", stringsAsFactors = FALSE)
-food_group_nrf_dga <- read.csv("food_group_nrf_dga.csv", stringsAsFactors = FALSE)
+fg_rec_nrf_dga <- read.csv("food_group_nrf_dga.csv", stringsAsFactors = FALSE)
 
 
 

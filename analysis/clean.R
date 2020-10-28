@@ -40,7 +40,7 @@ food_equivalent <- food_equivalent %>%
 # check_empty_glimpse(fndds_survey)
 # check_empty_glimpse(food_nutrient)
 # check_empty_glimpse(nutrient)
-# check_empty_glimpse(food_group_nrf_dga)
+# check_empty_glimpse(fg_rec_nrf_dga)
 # check_empty_glimpse(food_equivalent)
 
 ## handle  nulls

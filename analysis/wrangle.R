@@ -1,17 +1,25 @@
 source("C:/Users/Owner/repos/nutrition_dashboard/analysis/clean.r")
 
+###############################################################################
+# VARIABLES
+
+#energy contents per 100g
 energy <- food_nutrient %>% 
   left_join(all_of(nutrient), by=c("nutrient_id"="id")) %>%
-  filter(name == "Energy" & unit_name == "KCAL") %>%
+  left_join(all_of(fndds_survey), by="fdc_id") %>%
+  filter(name == "Energy" & unit_name == "KCAL"
+         & is.na(food_code) != TRUE) %>%
   rename("energy_per_100g" = amount,
          "energy_unit" = unit_name) %>%
   mutate(energy_unit = tolower(energy_unit)) %>%
   select(fdc_id,
+         food_code,
          energy_per_100g,
          energy_unit) 
 
-food_equivalent <- food_equivalent %>%
-  rename("foodcode" = FOODCODE,
+# nrf_fg (fg component of hybrid nrf)
+var_nrf_fg <- food_equivalent %>%
+  rename("food_code" = FOODCODE,
          "description" = DESCRIPTION,
          "fruits" = F_TOTAL,
          "vegetables" = V_TOTAL,
@@ -20,7 +28,7 @@ food_equivalent <- food_equivalent %>%
          "protein_foods" = PF_TOTAL,
          "nuts_and_seeds" = PF_NUTSDS,
          "dairy" = D_TOTAL) %>%
-  pivot_longer(cols = !c("foodcode", "description"),
+  pivot_longer(cols = !c("food_code", "description"),
                names_to = "food_group",
                values_to = "equivalents_per_100g") %>%
   mutate("nrf_fg_id" = case_when(food_group == "whole_grains" ~1,
@@ -35,21 +43,20 @@ food_equivalent <- food_equivalent %>%
                                        food_group == "nuts_and_seeds" ~"oz",
                                        food_group == "protein_foods" ~"oz",
                                        food_group == "grains" ~"oz"),
-         food_group = str_replace_all(food_group, "_", " ")) 
+         food_group = str_replace_all(food_group, "_", " "),
+         description = tolower(description)) %>%
+  left_join(fg_rec_nrf_dga, by="nrf_fg_id") %>%
+  left_join(energy, by="food_code")
 
-nrf_variables <- food %>%
+
+# nrf6.3
+var_nrf_63 <- food %>%
   # fndds foods only
   filter(data_type == "survey_fndds_food") %>%
   # nutrient amounts
   left_join(all_of(food_nutrient), by="fdc_id") %>% 
   # nutrient names and units
   left_join(all_of(nutrient), by=c("nutrient_id"="id")) %>%
-  # food group crossover
-  left_join(all_of(fndds_survey), by="fdc_id") %>%
-  # food groups fped
-  left_join(all_of(food_equivalent), by=c("food_code"="foodcode")) %>%
-  # food groups and dga daily recommendations
-  left_join(all_of(food_group_nrf_dga), by="nrf_fg_id") %>%
   # energy content per food (kcal)
   left_join(all_of(energy), by="fdc_id") %>%
   # clean names
@@ -57,7 +64,7 @@ nrf_variables <- food %>%
          nutrient_per_100g = amount,
          nutrient_unit = unit_name) %>% 
   mutate(nutrient_unit = tolower(nutrient_unit),
-         "description" = tolower(description.x),
+         "description" = tolower(description),
          nutrient_name = case_when(nutrient_name == "Calcium, Ca" ~"calcium",
                                    nutrient_name == "Fatty acids, total saturated" ~"saturated fat",
                                    nutrient_name == "Fiber, total dietary" ~"dietary fiber",
@@ -88,10 +95,8 @@ nrf_variables <- food %>%
   left_join(daily_value[-2], by=c("nutrient_id"="dv_id")) %>% # daily_value[-2] to eliminate clash with nrf_variables.nutrient_name when joining
   # filter only necessary nutrients
   filter(nutrient_id %in% c(1:9)) %>%
-  rename("food_group"=food_group.x) %>% 
   select(id,
          fdc_id,
-         food_code,
          description,
          nutrient_name,
          nutrient_per_100g,
@@ -100,24 +105,66 @@ nrf_variables <- food %>%
          daily_value_unit,
          nutrient_type,
          energy_per_100g,
-         energy_unit,
-         food_group,
-         equivalents_per_100g,
-         equivalent_unit,
-         daily_rec_dga,
-         equivalent_unit_dga)
+         energy_unit)
 
+###############################################################################
+# PCT DAILY VALUES (nutrients and food groups)
 
-nrf <- nrf_variables %>%
+# nutrients
+pct_dv_nutrients <- var_nrf_63 %>%
   mutate(nutrient_per_100g = case_when(nutrient_type == "limit" ~ -nutrient_per_100g,
                                        TRUE ~nutrient_per_100g),
-         "n" = (nutrient_per_100g/energy_per_100g/daily_value)*100*100,
-         n = case_when(n > 100 ~100,
-                         n < -100 ~ -100,
-                         TRUE ~n)) %>%   
+         "pct_dv_per_100kcal" = round((nutrient_per_100g/energy_per_100g/daily_value)*100*100),
+         #cap daily values at 100%
+         pct_dv_per_100kcal = case_when(pct_dv_per_100kcal > 100 ~100,
+                                        pct_dv_per_100kcal < -100 ~ -100,
+                                        TRUE ~pct_dv_per_100kcal)) %>%
+  rename("component" = nutrient_name) %>%
+  select(fdc_id,
+         description,
+         component,
+         pct_dv_per_100kcal)
+
+# food groups
+pct_dv_food_groups <- var_nrf_fg %>%
+  #only consider food groups that contribute to the nrf fg score
+  filter(is.na(food_group_nrf) != TRUE) %>%
+  #calculate fg score
+  mutate("pct_dv_per_100kcal" = round((equivalents_per_100g/daily_rec_dga/energy_per_100g)*100*100),
+         #cap daily values at 100%
+         pct_dv_per_100kcal = case_when(pct_dv_per_100kcal > 100 ~100,
+                                        pct_dv_per_100kcal < -100 ~ -100,
+                                        TRUE ~pct_dv_per_100kcal)) %>%
+  rename("component" = food_group) %>%
+  select(fdc_id,
+         description,
+         component,
+         pct_dv_per_100kcal)
+
+# bind nutrient & food group %dvs
+pct_dv <- bind_rows(pct_dv_food_groups, pct_dv_nutrients) %>%
+  arrange(fdc_id)
+
+###############################################################################
+# FOOD SCORES
+
+# nrf6.3
+nrf_63 <- pct_dv_nutrients %>%
   group_by(fdc_id) %>%
-  summarize(description = max(description),
-            "nrf" = round(sum(n))) 
+  summarize("nrf_63" = round(sum(pct_dv_per_100kcal))) 
+
+# nrf_fg (food group variable of hybrid nrf)
+nrf_fg <- pct_dv_food_groups %>%
+  group_by(fdc_id) %>%
+  summarise("nrf_fg" = round(sum(pct_dv_per_100kcal)))
+
+# nrf 6.3, hybrid nrf 
+nrf <- nrf_63 %>%
+  left_join(nrf_fg, by="fdc_id") %>%
+  mutate("nrf_hybrid" = nrf_63 + nrf_fg) %>%
+  select(-nrf_fg)
+
+
 
 
 
