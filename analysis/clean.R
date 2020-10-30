@@ -1,4 +1,5 @@
 source("C:/Users/Owner/repos/nutrition_dashboard/analysis/import.r")
+source("C:/Users/Owner/repos/nutrition_dashboard/analysis/functions.r")
 
 ## select necessary columns
 
@@ -40,7 +41,8 @@ food_equivalent <- food_equivalent %>%
 # check_empty_glimpse(fndds_survey)
 # check_empty_glimpse(food_nutrient)
 # check_empty_glimpse(nutrient)
-# check_empty_glimpse(fg_rec_nrf_dga)
+# check_empty_glimpse(daily_value_nutrient)
+# check_empty_glimpse(daily_value_food_group)
 # check_empty_glimpse(food_equivalent)
 
 ## handle  nulls

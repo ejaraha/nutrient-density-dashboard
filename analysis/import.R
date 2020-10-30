@@ -1,5 +1,5 @@
 library(tidyverse)
-setwd("C:/Users/Owner/repos/nutrition_dashboard/data")
+setwd("C:/Users/Owner/repos/nutrition_dashboard/data/raw")
 
 #food data central
 food <- read.csv("fdc/food.csv", stringsAsFactors = FALSE)
@@ -11,8 +11,8 @@ nutrient <- read.csv("fdc/nutrient.csv", stringsAsFactors = FALSE)
 food_equivalent <- read.csv("food_pattern_equivalents_database.csv", stringsAsFactors = FALSE)
 
 #supplemental data
-daily_value <- read.csv("daily_values.csv", stringsAsFactors = FALSE)
-fg_rec_nrf_dga <- read.csv("food_group_nrf_dga.csv", stringsAsFactors = FALSE)
+daily_value_nutrient <- read.csv("daily_value_nutrient.csv", stringsAsFactors = FALSE)
+daily_value_food_group <- read.csv("daily_value_food_group.csv", stringsAsFactors = FALSE)
 
 
 

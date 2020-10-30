@@ -45,7 +45,7 @@ var_nrf_fg <- food_equivalent %>%
                                        food_group == "grains" ~"oz"),
          food_group = str_replace_all(food_group, "_", " "),
          description = tolower(description)) %>%
-  left_join(fg_rec_nrf_dga, by="nrf_fg_id") %>%
+  left_join(daily_value_food_group, by="nrf_fg_id") %>%
   left_join(energy, by="food_code")
 
 
@@ -92,7 +92,7 @@ var_nrf_63 <- food %>%
          nutrient_unit = case_when(nutrient_unit == "iu" ~"mcg",
                                    TRUE ~nutrient_unit)) %>% 
   # daily values
-  left_join(daily_value[-2], by=c("nutrient_id"="dv_id")) %>% # daily_value[-2] to eliminate clash with nrf_variables.nutrient_name when joining
+  left_join(daily_value_nutrient[-2], by=c("nutrient_id"="dv_id")) %>% # daily_value_nutrient[-2] to eliminate clash with nrf_variables.nutrient_name when joining
   # filter only necessary nutrients
   filter(nutrient_id %in% c(1:9)) %>%
   select(id,
@@ -114,6 +114,7 @@ var_nrf_63 <- food %>%
 pct_dv_nutrients <- var_nrf_63 %>%
   mutate(nutrient_per_100g = case_when(nutrient_type == "limit" ~ -nutrient_per_100g,
                                        TRUE ~nutrient_per_100g),
+         #calculate nutrient score: [1] calculate %DV per kcal then multiply by 100 to get %DV per 100 kcal
          "pct_dv_per_100kcal" = round((nutrient_per_100g/energy_per_100g/daily_value)*100*100),
          #cap daily values at 100%
          pct_dv_per_100kcal = case_when(pct_dv_per_100kcal > 100 ~100,
@@ -129,8 +130,8 @@ pct_dv_nutrients <- var_nrf_63 %>%
 pct_dv_food_groups <- var_nrf_fg %>%
   #only consider food groups that contribute to the nrf fg score
   filter(is.na(food_group_nrf) != TRUE) %>%
-  #calculate fg score
-  mutate("pct_dv_per_100kcal" = round((equivalents_per_100g/daily_rec_dga/energy_per_100g)*100*100),
+  #calculate food group score: [1] calculate %DV per kcal then multiply by 100 to get %DV per 100 kcal
+  mutate("pct_dv_per_100kcal" = round((equivalents_per_100g/energy_per_100g/daily_rec_dga)*100*100),
          #cap daily values at 100%
          pct_dv_per_100kcal = case_when(pct_dv_per_100kcal > 100 ~100,
                                         pct_dv_per_100kcal < -100 ~ -100,
@@ -143,6 +144,7 @@ pct_dv_food_groups <- var_nrf_fg %>%
 
 # bind nutrient & food group %dvs
 pct_dv <- bind_rows(pct_dv_food_groups, pct_dv_nutrients) %>%
+  mutate(pct_dv_per_100kcal = abs(pct_dv_per_100kcal)) %>%
   arrange(fdc_id)
 
 ###############################################################################
@@ -156,53 +158,30 @@ nrf_63 <- pct_dv_nutrients %>%
 # nrf_fg (food group variable of hybrid nrf)
 nrf_fg <- pct_dv_food_groups %>%
   group_by(fdc_id) %>%
-  summarise("nrf_fg" = round(sum(pct_dv_per_100kcal)))
+  #calculate fg component of hybrid nutrient density score
+  mutate("nrf_fg" = round(sum(pct_dv_per_100kcal))) %>% 
+  #food group for each food = food group with highest %DV for that food
+  filter(pct_dv_per_100kcal == max(pct_dv_per_100kcal)) %>% 
+  rename("food_group" = component) %>%
+  #handle foods that are not in a food group (human milk, oil)
+  filter(food_group == max(food_group)) %>%
+  mutate(food_group = case_when(nrf_fg == 0 ~NA_character_,
+                                TRUE ~ food_group)) %>%
+  select(-pct_dv_per_100kcal) 
+
 
 # nrf 6.3, hybrid nrf 
 nrf <- nrf_63 %>%
   left_join(nrf_fg, by="fdc_id") %>%
-  mutate("nrf_hybrid" = nrf_63 + nrf_fg) %>%
-  select(-nrf_fg)
+  mutate("nrf_hybrid" = nrf_63 + nrf_fg) %>% 
+  select(fdc_id,
+         description,
+         food_group,
+         nrf_63,
+         nrf_hybrid) 
 
+###############################################################################
+# OUTPUT CSVS
 
-
-
-
-
-
-
-# 
-# df <- nrf %>% filter(grepl("2%", description) == TRUE
-#                     & grepl("2%", description) == TRUE)
-# 
-# 
-# df <- nrf %>% filter(grepl("plain", description) == TRUE
-#                           & grepl("yogurt", description) == TRUE
-#                           & data_type == "survey_fndds_food") 
-# 
-# df <- nrf %>% filter(grepl("raw", description) == TRUE
-#                           & grepl("broccoli", description) == TRUE
-#                           & data_type == "survey_fndds_food")
-# 
-# df <- nrf %>% filter(grepl("rice", description) == TRUE
-#                           & grepl("white", description) == TRUE
-#                           & data_type == "survey_fndds_food")
-# 
-# df <- nrf %>% filter(grepl("vegetable", description) == TRUE
-#                           & grepl("soup", description) == TRUE
-#                           & grepl("canned", description) == TRUE
-#                           & grepl("reduced", description) == TRUE
-#                           & data_type == "survey_fndds_food") 
-# 
-# df <- nrf %>% filter(grepl("green", description) == TRUE
-#                           & grepl("peas", description) == TRUE
-#                           & grepl("canned", description) == TRUE
-#                           & data_type == "survey_fndds_food") 
-# 
-# df <- nrf %>% filter(grepl("milk", description) == TRUE
-#                           & grepl("", description) == TRUE
-#                           & grepl("calcium", description) == TRUE
-#                           & grepl("", description) == TRUE
-#                           & data_type == "survey_fndds_food") 
-
-
+write.csv(nrf, "C:/Users/Owner/repos/nutrition_dashboard/data/nutrient_density_score.csv", row.names = FALSE)
+write.csv(pct_dv, "C:/Users/Owner/repos/nutrition_dashboard/data/percent_daily_value.csv", row.names = FALSE)
