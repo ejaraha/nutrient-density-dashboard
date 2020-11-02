@@ -6,7 +6,8 @@ library(dplyr)
 setwd("C:/Users/Owner/repos/nutrition_dashboard/data/")
 
 nutrient_density_score <- read.csv("nutrient_density_score.csv", stringsAsFactors = FALSE)
-daily_value <- read.csv("percent_daily_recommendation.csv",stringsAsFactors = FALSE)
+pct_daily_rec <- read.csv("percent_daily_recommendation.csv",stringsAsFactors = FALSE)
+initial_food_selection <- "milk, nfs"
 
 ui <- fluidPage(
   
@@ -23,10 +24,11 @@ ui <- fluidPage(
           column(width = 4,
                selectInput(inputId = "select_food",
                            label = "Food:",
-                           choices = nutrient_density_score$description)),
+                           choices = nutrient_density_score$description,
+                           selected = initial_food_selection)),
           column(width = 2,
                  numericInput(inputId = "calories",
-                              label = "Calories",
+                              label = "Calories:",
                               value = 100,
                               step = 50)),
       ),
@@ -40,18 +42,26 @@ ui <- fluidPage(
                             label = "remove"))
       ),
       
+      br(),
+      
       fluidRow(
-        #output: handsontable
+        #output: table to display foods and calories
         column(width = 12,
                tableOutput(outputId = "food_table"))
       ),
       
       fluidRow(
+        #TEST
+        column(width = 12,
+               tableOutput(outputId = "test_table"))
+      ),
+      
+      fluidRow(
         #output: %DV bar chart
         column(width = 6,
-               plotOutput(outputId = "pct_dv")),
+               plotOutput(outputId = "pct_daily_rec")),
         #output: nutrient density score bar chart
-        column(width = 6, offset = 6,
+        column(width = 6, 
                plotOutput(outputId = "nd_score"))
       )
       
@@ -65,17 +75,17 @@ ui <- fluidPage(
         column(width = 4,
                radioButtons(inputId = "select_food_group",
                             label = "Select a food group:",
-                            choices = unique(daily_value$component))
+                            choices = unique(nutrient_density_score$food_group))
                ),
         #output: nrf 6.3 histogram
-        column(width = 8, offset = 4,
-               plotOutput(outputId = "hist_nrf_63"))
+        column(width = 8, offset = 1,
+               plotOutput(outputId = "hist_nd_63"))
       ),
       
       fluidRow(
         #output: nrf hybrid histogram
         column(width = 8, offset = 4,
-               plotOutput(outputId = "hist_nrf_hybrid"))
+               plotOutput(outputId = "hist_nd_hybrid"))
       )
     ),
     
@@ -100,15 +110,40 @@ ui <- fluidPage(
 
 server <- function(input, output){
   
-  # data frame of nutrient_density_score filtered by input$select_food
-  df <- reactive({nutrient_density_score %>%
-      filter(description %in% input$select_food) %>%
-      mutate("calories"=100) %>%
-      select(description, calories)})
+  # initialize dataframe for input$select_food
+  food_cal <- data.frame("description"=c(initial_food_selection), "calories"=c(100))
+  # make dataframe reactive so it updates when the values change
+  food_cal_values <- reactiveValues(data = food_cal)
   
-  # datavalues <- reactiveValues(data = data.frame(df())) 
+  # when "add" button is pressed, bind selection to food_cal_values
+  observeEvent(input$add_food,
+               #get current value of food_cal_values
+                {food_cal_current <- food_cal_values$data
+                #alter food_cal_values
+                food_cal_new <- bind_rows(food_cal_current,
+                                            data.frame("description" = input$select_food,
+                                                       "calories" = input$calories))
+                #update food_cal_values with new values
+                food_cal_values$data <- food_cal_new})
   
-  output$food_table <- renderTable({df()})
+  # when "remove" button is pressed, remove selection from food_cal_values
+  observeEvent(input$remove_food,
+               #get current value of food_cal_values
+                {food_cal_current <- food_cal_values$data
+                #check if food_cal_current contains the input to be removed 
+                check_exists <- nrow(food_cal_current[which(food_cal_current$description == input$select_food
+                                       & food_cal_current$calories == input$calories),])
+                #only alter food_cal_values if food_cal_current contains the input to be removed
+                if(check_exists != 0){
+                food_cal_new <- food_cal_current[-which(food_cal_current$description == input$select_food
+                                                        & food_cal_current$calories == input$calories),]
+                #update food_cal_values with new values
+                food_cal_values$data <- food_cal_new}
+                })
+
+  output$food_table <- renderTable({food_cal_values$data})
+  
+  #output$test_table <- renderTable({df_()})
 }
 
 
