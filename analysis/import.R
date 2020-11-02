@@ -11,10 +11,9 @@ nutrient <- read.csv("fdc/nutrient.csv", stringsAsFactors = FALSE)
 food_equivalent <- read.csv("food_pattern_equivalents_database.csv", stringsAsFactors = FALSE)
 
 #supplemental data
-daily_value_nutrient <- read.csv("daily_value_nutrient.csv", stringsAsFactors = FALSE)
-daily_value_food_group <- read.csv("daily_value_food_group.csv", stringsAsFactors = FALSE)
-
-
+# daily_value_nutrient <- read.csv("daily_value_nutrient.csv", stringsAsFactors = FALSE)
+# daily_value_food_group <- read.csv("daily_value_food_group.csv", stringsAsFactors = FALSE)
+daily_recommendation <- read.csv("daily_recommendation.csv", stringsAsFactors = FALSE)
 
 
 

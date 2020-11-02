@@ -23,7 +23,7 @@ nutrient <- nutrient %>%
          name,
          unit_name)
 
-# pivot food_equivalent then select necessary columns
+# pivot food_equivalent and filter food groups
 food_group_equivalent <- food_equivalent %>%
   rename("food_code" = FOODCODE,
          "description" = DESCRIPTION,
@@ -36,19 +36,14 @@ food_group_equivalent <- food_equivalent %>%
          "dairy" = D_TOTAL) %>%
   pivot_longer(cols = !c("food_code", "description"),
                names_to = "food_group",
-               values_to = "equivalents_per_100g") %>%
-  mutate("equivalent_unit" = case_when(food_group == "whole_grains" ~"oz",
-                                       food_group == "vegetables" ~"cup",
-                                       food_group =="fruits" ~"cup",
-                                       food_group == "dairy" ~"cup",
-                                       food_group == "nuts_and_seeds" ~"oz",
-                                       food_group == "protein_foods" ~"oz",
-                                       food_group == "grains" ~"oz"),
-         "nrf_fg_id" = case_when(food_group == "whole_grains" ~1,
-                                 food_group == "vegetables" ~2,
-                                 food_group =="fruits" ~3,
-                                 food_group == "dairy" ~4,
-                                 food_group == "nuts_and_seeds" ~5),
+               values_to = "food_group_per_100g") %>%
+  mutate("unit" = case_when(food_group == "whole_grains" ~"oz equivalent",
+                                       food_group == "vegetables" ~"cup equivalent",
+                                       food_group =="fruits" ~"cup equivalent",
+                                       food_group == "dairy" ~"cup equivalent",
+                                       food_group == "nuts_and_seeds" ~"oz equivalent",
+                                       food_group == "protein_foods" ~"oz equivalent",
+                                       food_group == "grains" ~"oz equivalent"),
          food_group = str_replace_all(food_group, "_", " "),
          description = tolower(description)) %>%
   filter(food_group %in% c("whole grains", 

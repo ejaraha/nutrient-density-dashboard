@@ -1,11 +1,12 @@
 library(shiny)
 library(rhandsontable)
 library(shinythemes)
+library(dplyr)
 
 setwd("C:/Users/Owner/repos/nutrition_dashboard/data/")
 
 nutrient_density_score <- read.csv("nutrient_density_score.csv", stringsAsFactors = FALSE)
-daily_value <- read.csv("percent_daily_value.csv",stringsAsFactors = FALSE)
+daily_value <- read.csv("percent_daily_recommendation.csv",stringsAsFactors = FALSE)
 
 ui <- fluidPage(
   
@@ -19,17 +20,30 @@ ui <- fluidPage(
       "Foods",
       fluidRow(
           #input: dropdown menu to select foods
-          column(width = 12,
-               selectizeInput(inputId = "food",
-                           label = "Select foods:",
-                           choices = nutrient_density_score$description,
-                           multiple = TRUE))
+          column(width = 4,
+               selectInput(inputId = "select_food",
+                           label = "Food:",
+                           choices = nutrient_density_score$description)),
+          column(width = 2,
+                 numericInput(inputId = "calories",
+                              label = "Calories",
+                              value = 100,
+                              step = 50)),
+      ),
+      
+      fluidRow(
+        column(width = 1,
+               actionButton(inputId = "add_food",
+                            label = "add")),
+        column(width = 2,
+               actionButton(inputId = "remove_food",
+                            label = "remove"))
       ),
       
       fluidRow(
         #output: handsontable
         column(width = 12,
-               rHandsontableOutput(outputId = "select_foods"))
+               tableOutput(outputId = "food_table"))
       ),
       
       fluidRow(
@@ -51,7 +65,7 @@ ui <- fluidPage(
         column(width = 4,
                radioButtons(inputId = "select_food_group",
                             label = "Select a food group:",
-                            choices = unique(nrf$food_group))
+                            choices = unique(daily_value$component))
                ),
         #output: nrf 6.3 histogram
         column(width = 8, offset = 4,
@@ -83,6 +97,19 @@ ui <- fluidPage(
   )
 )
 
-server <- function(input, output){}
+
+server <- function(input, output){
+  
+  # data frame of nutrient_density_score filtered by input$select_food
+  df <- reactive({nutrient_density_score %>%
+      filter(description %in% input$select_food) %>%
+      mutate("calories"=100) %>%
+      select(description, calories)})
+  
+  # datavalues <- reactiveValues(data = data.frame(df())) 
+  
+  output$food_table <- renderTable({df()})
+}
+
 
 shinyApp(ui=ui, server=server)
