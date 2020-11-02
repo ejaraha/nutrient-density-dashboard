@@ -2,6 +2,7 @@ library(shiny)
 library(rhandsontable)
 library(shinythemes)
 library(dplyr)
+library(ggplot2)
 
 setwd("C:/Users/Owner/repos/nutrition_dashboard/data/")
 
@@ -45,26 +46,13 @@ ui <- fluidPage(
       br(),
       
       fluidRow(
-        #output: table to display foods and calories
-        column(width = 12,
-               tableOutput(outputId = "food_table"))
-      ),
-      
-      fluidRow(
-        #TEST
-        column(width = 12,
-               tableOutput(outputId = "test_table"))
-      ),
-      
-      fluidRow(
+        #output: table to display foods, calories, and nutrient density scores
+        column(width = 6,
+               dataTableOutput(outputId = "food_selection")),
         #output: %DV bar chart
         column(width = 6,
-               plotOutput(outputId = "pct_daily_rec")),
-        #output: nutrient density score bar chart
-        column(width = 6, 
-               plotOutput(outputId = "nd_score"))
+               plotOutput(outputId = "pct_daily_rec"))
       )
-      
     ),
     
     tabPanel(
@@ -95,13 +83,13 @@ ui <- fluidPage(
       fluidRow(
         #output: nutrient density score data table
         column(width = 12,
-               dataTableOutput(outputId = "data_nrf"))
+               dataTableOutput(outputId = "data_nds"))
       ),
       
       fluidRow(
         #output: percent daily value data table
         column(width = 12,
-               dataTableOutput(outputId = "data_dv"))
+               dataTableOutput(outputId = "data_pdg"))
       )
     )
   )
@@ -109,6 +97,9 @@ ui <- fluidPage(
 
 
 server <- function(input, output){
+  
+  #############################################################################################
+  # FOOD TAB
   
   # initialize dataframe for input$select_food
   food_cal <- data.frame("description"=c(initial_food_selection), "calories"=c(100))
@@ -140,10 +131,61 @@ server <- function(input, output){
                 #update food_cal_values with new values
                 food_cal_values$data <- food_cal_new}
                 })
-
-  output$food_table <- renderTable({food_cal_values$data})
   
-  #output$test_table <- renderTable({df_()})
+  # filter data from nutrient_density_score
+  nutrient_density_df <- reactive({food_cal_values$data %>% 
+      left_join(nutrient_density_score, by="description") %>%
+      select(-c(fdc_id, food_group))})
+  
+  output$food_selection <- renderDataTable({nutrient_density_df()})
+  
+  pct_daily_rec_df <- reactive({food_cal_values$data %>%
+      #filter for selected foods
+      left_join(pct_daily_rec, by="description") %>%
+      #scale pct_daily_rec to match calories
+      mutate("pct_daily_rec" = pct_daily_rec_per_100kcal*calories/100) %>%
+      #calculate total pct_daily_rec accross all selected foods
+      group_by(component_name) %>%
+      summarise("pct_daily_rec_total" = sum(pct_daily_rec)) %>%
+      #cap pct_daily_rec at 100%
+      mutate(pct_daily_rec_total = case_when(pct_daily_rec_total > 100 ~100,
+                                             TRUE ~pct_daily_rec_total))
+    })
+  
+  output$pct_daily_rec <- renderPlot({
+    pct_daily_rec_df() %>%
+      ggplot(aes(x=component_name, y=pct_daily_rec_total)) +
+      geom_col() +
+      coord_flip()
+  })
+  
+  #############################################################################################
+  # FOOD GROUP TAB
+  
+  output$hist_nd_63 <- renderPlot({
+    food_group_select <- switch(input$select_food_group,
+                         "no food group" = "no food group",
+                         "dairy" = "dairy",
+                         "grains" = "grains",
+                         "vegetables" = "vegetables",
+                         "fruits" = "fruits",
+                         "protein foods" ="protein foods")
+    
+    nutrient_density_score %>% 
+      filter(food_group == food_group_select)%>%
+      pivot_longer(c("nd_63", "nd_hybrid"),
+                   names_to = "nd_type",
+                   values_to = "nd_score") %>%
+      ggplot(aes(x=nd_score, fill=nd_type)) + 
+      geom_histogram(bins=100, position = "identity", alpha = 0.5)
+  })
+  
+  #############################################################################################
+  # ABOUT THE DATA TAB
+  
+  output$data_nds <- renderDataTable(nutrient_density_score)
+  
+  output$data_pdg <- renderDataTable(pct_daily_rec)
 }
 
 
