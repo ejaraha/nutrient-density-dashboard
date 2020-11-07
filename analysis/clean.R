@@ -66,7 +66,6 @@ food_group_equivalent <- food_equivalent %>%
 # check_empty_glimpse(food_group_equivalent)
 
 ## handle  nulls
-print("handling nulls...")
 
 food <- food %>%
   mutate(description = na_if(description,""))
