@@ -123,6 +123,8 @@ pct_daily_rec_food_group <- food_group_equivalent %>% # food group equivalents i
 # PERCENT DAILY RECOMMENDATIONs (NUTRIENTs & FOOD GROUPS)
 
 pct_daily_rec <- bind_rows(pct_daily_rec_food_group, pct_daily_rec_nutrient) %>%
+  mutate(description = str_replace(description, ", nfs","")) %>%
+  filter(fdc_id != 781082) %>% #remove human milk
   arrange(fdc_id)
 
 ###############################################################################
@@ -146,7 +148,9 @@ nutrient_density_score <- nutrient_density_score_63 %>%
   left_join(food_group_score, by="fdc_id") %>%
   left_join(fndds_survey, by="fdc_id") %>%
   left_join(food_group, by="food_code") %>%
-  mutate("nd_hybrid" = nd_63 + food_group_score) %>% 
+  mutate("nd_hybrid" = nd_63 + food_group_score,
+         description = str_replace(description, ", nfs","")) %>%
+  filter(fdc_id != 781082) %>% #remove human milk
   select(fdc_id,
          description,
          food_group,
