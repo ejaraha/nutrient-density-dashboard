@@ -5,13 +5,13 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-# setwd("C:/Users/Owner/repos/nutrition_dashboard/data/")
-# 
-# nutrient_density_score <- read.csv("nutrient_density_score.csv", stringsAsFactors = FALSE)
-# pct_daily_rec <- read.csv("percent_daily_recommendation.csv",stringsAsFactors = TRUE)
+setwd("C:/Users/Owner/repos/nutrition_dashboard/data/")
 
-nutrient_density_score <- read.csv("https://raw.githubusercontent.com/sjaraha/nutrient-density-scores-shiny-app/main/nutrient_density_score.csv", stringsAsFactors = FALSE)
-pct_daily_rec <- read.csv("https://raw.githubusercontent.com/sjaraha/nutrient-density-scores-shiny-app/main/percent_daily_recommendation.csv", stringsAsFactors = FALSE)
+nutrient_density_score <- read.csv("nutrient_density_score.csv", stringsAsFactors = FALSE)
+pct_daily_rec <- read.csv("percent_daily_recommendation.csv",stringsAsFactors = TRUE)
+
+# nutrient_density_score <- read.csv("https://raw.githubusercontent.com/sjaraha/nutrient-density-scores-shiny-app/main/nutrient_density_score.csv", stringsAsFactors = FALSE)
+# pct_daily_rec <- read.csv("https://raw.githubusercontent.com/sjaraha/nutrient-density-scores-shiny-app/main/percent_daily_recommendation.csv", stringsAsFactors = FALSE)
 
 initial_food_selection <- "milk"
 
@@ -51,7 +51,7 @@ ui <- fluidPage(
       tags$em("nutrients to limit"),
       " (sodium, saturated fat, total sugars), and five ",
       tags$em("food groups to encourage"), 
-      " (whole grains, fruits, vegetables, dairy, nuts & seeds). Scores range from -100 to 350. The higher the score, the more ecouraged nutrients or food groups exist per 100 kcal of a particular food. For more on how the hybrid dutrient density score is calculated, please see ", 
+      " (whole grains, fruits, vegetables, dairy, nuts & seeds). Scores range from -100 to 350. The higher the score, the more encouraged nutrients or food groups exist per 100 kcal of a particular food. For more on how the hybrid nutrient density score is calculated, please see ", 
         a(href = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6489166/", "this research paper.")),
   
       h4("How to use the tool"),
@@ -103,10 +103,10 @@ ui <- fluidPage(
       
       br(),
       
-      h4("The calculation of nutrient density is a developing field of reseach."),
+      h4("The calculation of nutrient density is a developing field of research."),
       p("Prior to the hybrid nutrient density score, nutrient density was calculated using the nutrient rich foods index. The nutrient rich foods index balances nutrients to encourage against nutrients to limit, without considering food groups to encourage. Many iterations of the nutrient rich foods index have been proposed, using anywhere from six to fifteen nutrients to encourage against three nutrients to limit (saturated fats, sugars, sodium)."),
       br(),
-      p("The histogram below shows the distribution of nutrient density scores when using the nutrient rich foods index and the hybrid nutrient density score. Six nutrients to encourage were considered when calculating the nurtient rich foods index (protein, dietary fiber, vitamin D, potassium, calcium, iron)."),
+      p("The histogram below shows the distribution of nutrient density scores when using the nutrient rich foods index and the hybrid nutrient density score. Six nutrients to encourage were considered when calculating the nutrient rich foods index (protein, dietary fiber, vitamin D, potassium, calcium, iron)."),
       
       br(),
       
@@ -276,7 +276,7 @@ server <- function(input, output){
                          "fruits" = "fruits",
                          "protein foods" ="protein foods")
     
-    cols_food_group <- c("nd_63" = "blue",
+    cols_food_group <- c("nd_63" = "red4",
                          "nd_hybrid" = "purple")
     
     nutrient_density_score %>% 
