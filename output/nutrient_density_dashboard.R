@@ -4,14 +4,14 @@ library(shinythemes)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+# 
+# setwd("C:/Users/Owner/repos/nutrition_dashboard/data/")
+# 
+# nutrient_density_score <- read.csv("nutrient_density_score.csv", stringsAsFactors = FALSE)
+# pct_daily_rec <- read.csv("percent_daily_recommendation.csv",stringsAsFactors = TRUE)
 
-setwd("C:/Users/Owner/repos/nutrition_dashboard/data/")
-
-nutrient_density_score <- read.csv("nutrient_density_score.csv", stringsAsFactors = FALSE)
-pct_daily_rec <- read.csv("percent_daily_recommendation.csv",stringsAsFactors = TRUE)
-
-# nutrient_density_score <- read.csv("https://raw.githubusercontent.com/sjaraha/nutrient-density-scores-shiny-app/main/nutrient_density_score.csv", stringsAsFactors = FALSE)
-# pct_daily_rec <- read.csv("https://raw.githubusercontent.com/sjaraha/nutrient-density-scores-shiny-app/main/percent_daily_recommendation.csv", stringsAsFactors = FALSE)
+nutrient_density_score <- read.csv("https://raw.githubusercontent.com/sjaraha/nutrient-density-scores-shiny-app/main/nutrient_density_score.csv", stringsAsFactors = FALSE)
+pct_daily_rec <- read.csv("https://raw.githubusercontent.com/sjaraha/nutrient-density-scores-shiny-app/main/percent_daily_recommendation.csv", stringsAsFactors = FALSE)
 
 initial_food_selection <- "milk"
 
