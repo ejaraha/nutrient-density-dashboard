@@ -137,8 +137,8 @@ ui <- fluidPage(
       a(" Food and Nutrition Database for Dietary Studies (FNDDS)", href = "https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/food-surveys-research-group/docs/fndds/"),
       " and the",
       a(" Food Pattern Equivalent Database (FPED)", href = "https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/food-surveys-research-group/docs/fped-overview/"),
-      " were combined to create the tables used in this application. Data for daily recommendations and nutrient score calculations were sourced from",
-      a(" this research paper",href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6489166/"),
+      " were combined to create the tables used in this application. Data for daily recommendations and nutrient density score calculations were sourced from",
+      a(" this research paper.",href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6489166/"),
       " The resulting tables are shown below."),
       br(),
       p(tags$b("FNDDS"), 
@@ -152,7 +152,7 @@ ui <- fluidPage(
       
       br(),
       
-      h3("Nutrient Density Score Table"),
+      h3("Nutrient Density Scores"),
       
       br(),
       
@@ -164,7 +164,7 @@ ui <- fluidPage(
       
       br(),
       
-      h3("Percent of Daily Recommendation Table"),
+      h3("Percent of Daily Recommendation"),
       
       br(),
       
